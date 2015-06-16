@@ -10,12 +10,25 @@ use Buzz\Client\Curl;
 
 class Api
 {
+
     protected $accessToken;
     protected $host = 'https://api.admitad.com';
 
     public function __construct($accessToken = null)
     {
         $this->accessToken = $accessToken;
+    }
+
+    /**
+     * 
+     */
+    static function factory($clientId, $clientSecret, $scope)
+    {
+        $api = new static;
+        $authorizeResult = $api->authorizeClient($clientId, $clientSecret, $scope)->getArrayResult();
+        $api = new static($authorizeResult['access_token']);
+        
+        return $api;
     }
 
     public function getAccessToken()
@@ -49,10 +62,10 @@ class Api
     public function getAuthorizeUrl($clientId, $redirectUri, $scope, $responseType = 'code')
     {
         return $this->host . '/authorize/?' . http_build_query(array(
-            'client_id' => $clientId,
-            'redirect_uri' => $redirectUri,
-            'scope' => $scope,
-            'response_type' => $responseType
+                    'client_id' => $clientId,
+                    'redirect_uri' => $redirectUri,
+                    'scope' => $scope,
+                    'response_type' => $responseType
         ));
     }
 
@@ -123,7 +136,7 @@ class Api
         $client->send($request, $response);
 
         if (!$response->isSuccessful()) {
-            throw new ApiException('Operation failed: ' . $response->getError(), $request, $response);
+            throw new ApiException('Operation failed, check `clientId` and `clientSecret`: ' . $response->getError(), $request, $response);
         }
 
         return $response;
@@ -167,15 +180,6 @@ class Api
         return $this->send($request, null, false);
     }
 
-    public function selfAuthorize($clientId, $clientSecret, $scope)
-    {
-        $r = $this->authorizeClient($clientId, $clientSecret, $scope);
-        $accessToken = $r->getResult('access_token');
-        $this->setAccessToken($accessToken);
-        return $this;
-    }
-
-
     /**
      * @return ClientInterface
      */
@@ -185,4 +189,5 @@ class Api
         $curl->setTimeout(300);
         return $curl;
     }
+
 }
